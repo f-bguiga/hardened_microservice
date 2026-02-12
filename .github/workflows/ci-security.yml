@@ -1,0 +1,43 @@
+name: "Hardened CI Security"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. SCA: Scan Python dependencies for known CVEs
+      - name: Software Composition Analysis (SCA)
+        uses: snyk/actions/python@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      # 2. Lint Dockerfile for security "smells"
+      - name: Dockerfile Linting
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+
+      # 3. Build the Image
+      - name: Build Local Image
+        run: docker build -t my-app:test .
+
+      # 4. Container Scan: Check the final image for vulnerabilities
+      - name: Container Image Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'my-app:test'
+          ignore-policy: '.trivyignore'
+          format: 'table'
+          exit-code: '1' # This fails the pipeline if vulnerabilities are found
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
