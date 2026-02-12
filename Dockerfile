@@ -1,5 +1,5 @@
 # Step 1: Use a specific, small base image
-FROM python:3.11-slim-buster
+FROM python:3.11-slim-bookworm
 
 # Step 2: Set working directory
 WORKDIR /app
