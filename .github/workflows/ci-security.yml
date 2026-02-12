@@ -13,13 +13,22 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: terraform/
+          framework: terraform
+          # This ensures the pipeline fails if a HIGH or CRITICAL risk is found
+          soft_fail: false 
+          quiet: true
+
       # 1. SCA: Scan Python dependencies for known CVEs
       - name: Software Composition Analysis (SCA)
         uses: snyk/actions/python@master
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          args: --severity-threshold=high
+          args: --severity-threshold=high --file=app/requirements.txt
 
       # 2. Lint Dockerfile for security "smells"
       - name: Dockerfile Linting
